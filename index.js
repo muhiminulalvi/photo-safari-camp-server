@@ -44,6 +44,7 @@ async function run() {
 
     const instructorCollection = client.db("photoSafari").collection("instructors");
     const classCollection = client.db("photoSafari").collection("classes");
+    const cartCollection = client.db("photoSafari").collection("carts");
 
     // instructors data
     app.get('/instructors', async(req,res)=>{
@@ -57,7 +58,23 @@ async function run() {
         res.send(result)
     })
 
+    // carts
+    app.get('/carts', async(req,res)=> {
+      const email = req.query.email
+      if(!email){
+        res.send([])
+      }
+      const query = {email: email}
+      const result = await cartCollection.find(query).toArray()
+      res.send(result)
+    })
 
+    app.post('/carts', async(req,res)=> {
+      const course = req.body
+      console.log(course);
+      const result = await cartCollection.insertOne(course)
+      res.send(result)
+    })
 
 
     // Send a ping to confirm a successful connection
