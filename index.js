@@ -8,7 +8,7 @@ const cors = require('cors')
 const app = express()
 const port = process.env.PORT || 5000
 require('dotenv').config()
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 /*
 ===================================================
@@ -58,7 +58,11 @@ async function run() {
         res.send(result)
     })
 
-    // carts
+    /*
+===================================================
+            Get Cart Api
+===================================================
+*/
     app.get('/carts', async(req,res)=> {
       const email = req.query.email
       if(!email){
@@ -69,12 +73,30 @@ async function run() {
       res.send(result)
     })
 
+    /*
+===================================================
+            Store Cart Info
+===================================================
+*/
     app.post('/carts', async(req,res)=> {
       const course = req.body
       console.log(course);
       const result = await cartCollection.insertOne(course)
       res.send(result)
     })
+
+    /*
+===================================================
+            Delete Cart Item
+===================================================
+*/
+    app.delete('/carts/:id', async(req,res)=>{
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)}
+      const result = await cartCollection.deleteOne(query)
+      res.send(result)
+    })
+    
 
 
     // Send a ping to confirm a successful connection
