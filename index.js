@@ -45,6 +45,24 @@ async function run() {
     const instructorCollection = client.db("photoSafari").collection("instructors");
     const classCollection = client.db("photoSafari").collection("classes");
     const cartCollection = client.db("photoSafari").collection("carts");
+    const userCollection = client.db("photoSafari").collection("users");
+
+        /*
+===================================================
+            User Related API
+===================================================
+*/
+
+    app.post('/users', async(req,res)=> {
+      const user = req.body
+      const query = {email: user.email}
+      const oldUser = await userCollection.findOne(query)
+      if(oldUser){
+        return res.send({message: 'user already exist'})
+      }
+      const result = await userCollection.insertOne(user)
+      res.send(result)
+    })
 
     // instructors data
     app.get('/instructors', async(req,res)=>{
