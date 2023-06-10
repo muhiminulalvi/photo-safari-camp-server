@@ -185,12 +185,25 @@ async function run() {
       const result = await instructorCollection.find().toArray();
       res.send(result);
     });
-
+        /*
+===================================================
+            Class Api
+===================================================
+*/
     // classes data
     app.get("/classes", async (req, res) => {
       const result = await classCollection.find().toArray();
       res.send(result);
     });
+
+    // add class
+    app.post('/classes', verifyJWT, async(req,res)=>{
+      const newCourse = req.body
+      const result = await classCollection.insertOne(newCourse)
+      res.send(result)
+    })
+
+
 
     /*
 ===================================================
