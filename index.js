@@ -40,14 +40,14 @@ const client = new MongoClient(uri, {
 // verification
 const verifyJWT = (req, res, next) => {
   const authorization = req.headers.authorization;
-  console.log("Authorization = ", authorization);
+  // console.log("Authorization = ", authorization);
   if (!authorization) {
     return res
       .status(401)
       .send({ error: true, message: "unauthorized access" });
   }
   const token = authorization.split(" ")[1];
-  console.log("token = ", token);
+  // console.log("token = ", token);
 
   // // token verification
   // jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
@@ -59,7 +59,7 @@ const verifyJWT = (req, res, next) => {
       return res.status(403).send({ error: true, message: "forbidden access" });
     }
     req.decoded = decoded;
-    console.log({ decoded });
+    // console.log({ decoded });
     next();
   });
 
@@ -87,7 +87,7 @@ async function run() {
     app.post("/jwt", (req, res) => {
       const user = req.body;
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET);
-      console.log(token);
+      // console.log(token);
       res.json({ token });
     });
 
@@ -190,11 +190,31 @@ async function run() {
             Class Api
 ===================================================
 */
-    // classes data
-    app.get("/classes", async (req, res) => {
-      const result = await classCollection.find().toArray();
-      res.send(result);
-    });
+   
+app.get("/classes", async (req, res) => {
+  const { email } = req.query;
+
+  if (email) {
+    // getting instructor's classes
+    try {
+      const classes = await classCollection.find({ email }).toArray();
+      res.json(classes);
+    } catch (error) {
+      console.error("Failed to fetch instructor's classes:", error);
+      res.status(500).send("Failed to fetch instructor's classes");
+    }
+  } else {
+    // getting all classes
+    try {
+      const classes = await classCollection.find().toArray();
+      res.json(classes);
+    } catch (error) {
+      console.error("Failed to fetch classes:", error);
+      res.status(500).send("Failed to fetch classes");
+    }
+  }
+});
+
 
     // add class
     app.post("/classes", verifyJWT, async (req, res) => {
@@ -203,7 +223,7 @@ async function run() {
       res.send(result);
     });
 
-    // Update class 
+    // Update class
     app.patch("/classes/approve/:id", async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
@@ -216,8 +236,7 @@ async function run() {
       res.send(result);
     });
 
-
-    // denied class 
+    // denied class
     app.patch("/classes/denied/:id", async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
@@ -230,22 +249,23 @@ async function run() {
       res.send(result);
     });
 
-
     // feedback from admin
     app.post("/classes/feedback/:id", async (req, res) => {
       const id = req.params.id;
       const { feedback } = req.body;
-    
+
       const filter = { _id: new ObjectId(id) };
       const updateDoc = {
         $set: {
           feedback,
         },
-      }
-        const result = await classCollection.updateOne(filter, updateDoc);
-        res.send(result);
-      
+      };
+      const result = await classCollection.updateOne(filter, updateDoc);
+      res.send(result);
     });
+
+
+    
 
     /*
 ===================================================
@@ -260,7 +280,7 @@ async function run() {
       }
 
       const decodedEmail = req.decoded.email;
-      console.log("decoded email =", decodedEmail);
+      // console.log("decoded email =", decodedEmail);
       // if(email !== decodedEmail){
       //   return res.status(403).send({ error: true, message: "forbidden access" });
       // }
