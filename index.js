@@ -20,8 +20,6 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 app.use(express.json());
 app.use(cors());
 
-
-
 /*
 ===================================================
             MongoDB
@@ -44,25 +42,27 @@ const verifyJWT = (req, res, next) => {
   const authorization = req.headers.authorization;
   console.log("Authorization = ", authorization);
   if (!authorization) {
-    return res.status(401).send({ error: true, message: "unauthorized access" });
+    return res
+      .status(401)
+      .send({ error: true, message: "unauthorized access" });
   }
   const token = authorization.split(" ")[1];
   console.log("token = ", token);
 
   // // token verification
   // jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-    
+
   //   req.decoded = decoded;
 
-  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded)=>{
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
     if (err) {
       return res.status(403).send({ error: true, message: "forbidden access" });
     }
     req.decoded = decoded;
-    console.log({decoded});
+    console.log({ decoded });
     next();
-  })
-    
+  });
+
   // });
 };
 
@@ -97,17 +97,18 @@ async function run() {
 ===================================================
 */
 
-    // secure all user 
-    const verifyAdmin = async(req, res, next) =>{
-      const email = req.decoded.email
-      const query = {email: email}
-      const user = await userCollection.findOne(query)
-      if(user?.role !== 'admin'){
-        return res.status(403).send({ error: true, message: "forbidden access" });
+    // secure all user
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      if (user?.role !== "admin") {
+        return res
+          .status(403)
+          .send({ error: true, message: "forbidden access" });
       }
-      next()
-    }
-
+      next();
+    };
 
     app.get("/users", verifyJWT, verifyAdmin, async (req, res) => {
       const result = await userCollection.find().toArray();
@@ -149,9 +150,8 @@ async function run() {
       res.send(result);
     });
 
-
     // instructor verify
-    app.get("/users/instructor/:email", verifyJWT, async(req, res)=>{
+    app.get("/users/instructor/:email", verifyJWT, async (req, res) => {
       const email = req.params.email;
       if (req.decoded.email !== email) {
         res.send({ instructor: false });
@@ -160,7 +160,7 @@ async function run() {
       const user = await userCollection.findOne(query);
       const result = { instructor: user?.role === "instructor" };
       res.send(result);
-    })
+    });
     app.patch("/users/instructor/:id", async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
@@ -185,7 +185,7 @@ async function run() {
       const result = await instructorCollection.find().toArray();
       res.send(result);
     });
-        /*
+    /*
 ===================================================
             Class Api
 ===================================================
@@ -197,33 +197,77 @@ async function run() {
     });
 
     // add class
-    app.post('/classes', verifyJWT, async(req,res)=>{
-      const newCourse = req.body
-      const result = await classCollection.insertOne(newCourse)
-      res.send(result)
-    })
+    app.post("/classes", verifyJWT, async (req, res) => {
+      const newCourse = req.body;
+      const result = await classCollection.insertOne(newCourse);
+      res.send(result);
+    });
+
+    // Update class 
+    app.patch("/classes/approve/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          status: "approved",
+        },
+      };
+      const result = await classCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
 
 
+    // denied class 
+    app.patch("/classes/denied/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          status: "denied",
+        },
+      };
+      const result = await classCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
+
+    // feedback from admin
+    app.post("/classes/feedback/:id", async (req, res) => {
+      const id = req.params.id;
+      const { feedback } = req.body;
+    
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          feedback,
+        },
+      }
+        const result = await classCollection.updateOne(filter, updateDoc);
+        res.send(result);
+      
+    });
 
     /*
 ===================================================
             Get Cart Api
 ===================================================
 */
-    app.get("/carts", verifyJWT,  async (req, res) => {
+    app.get("/carts", verifyJWT, async (req, res) => {
       const email = req.query.email;
       // console.log('email =', email);
       if (!email) {
         res.send([]);
       }
 
-      const decodedEmail = req.decoded.email
-      console.log('decoded email =', decodedEmail);
+      const decodedEmail = req.decoded.email;
+      console.log("decoded email =", decodedEmail);
       // if(email !== decodedEmail){
       //   return res.status(403).send({ error: true, message: "forbidden access" });
       // }
-      if( decodedEmail !== email){
-        return res.status(403).send({ error: true, message: "forbidden access" });
+      if (decodedEmail !== email) {
+        return res
+          .status(403)
+          .send({ error: true, message: "forbidden access" });
       }
       const query = { email: email };
       // console.log('query = ', query);
