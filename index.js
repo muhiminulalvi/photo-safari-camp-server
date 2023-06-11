@@ -132,7 +132,7 @@ async function run() {
     app.get("/users/admin/:email", verifyJWT, async (req, res) => {
       const email = req.params.email;
       if (req.decoded.email !== email) {
-        res.send({ admin: false });
+        return res.send({ admin: false });
       }
       const query = { email: email };
       const user = await userCollection.findOne(query);
@@ -156,7 +156,7 @@ async function run() {
     app.get("/users/instructor/:email", verifyJWT, async (req, res) => {
       const email = req.params.email;
       if (req.decoded.email !== email) {
-        res.send({ instructor: false });
+       return res.send({ instructor: false });
       }
       const query = { email: email };
       const user = await userCollection.findOne(query);
@@ -183,10 +183,16 @@ async function run() {
     });
 
     // instructors data
+    // app.get("/instructors", async (req, res) => {
+    //   const result = await instructorCollection.find().toArray();
+    //   res.send(result);
+    // });
     app.get("/instructors", async (req, res) => {
-      const result = await instructorCollection.find().toArray();
-      res.send(result);
+      const query = { role: "instructor" };
+      const instructors = await userCollection.find(query).toArray();
+      res.send(instructors);
     });
+
     /*
 ===================================================
             Class Api
@@ -334,42 +340,7 @@ async function run() {
       });
     });
 
-    // app.post('/payments', verifyJWT, async (req, res) => {
-    //   const payment = req.body;
-    //   const insertResult = await paymentCollection.insertOne(payment);
-    //   // res.send(result)
 
-    //   const query = { _id: { $in: payment.cartItems.map(id => new ObjectId(id)) } }
-    //   const deleteResult = await cartCollection.deleteMany(query)
-
-    //   res.send({ insertResult, deleteResult });
-    // })
-    // app.post('/payments', verifyJWT, async (req, res) => {
-    //   const payment = req.body;
-    //   const insertResult = await paymentCollection.insertOne(payment);
-
-    //   const courseIds = payment.courseId;
-
-    //   // Update the enrolled classes and reduce available seats
-    //   const updateResult = await classCollection.updateMany(
-    //     { _id: { $in: courseIds.map(id => new ObjectId(id)) } },
-    //     { $inc: { studentsEnrolled: 1, availableSeats: -1 } }
-    //   );
-
-    //   res.send({ insertResult, updateResult });
-    // });
-
-    // app.post('/classes/enroll', verifyJWT, async (req, res) => {
-    //   const { courseId } = req.body;
-
-    //   // Update the enrolled classes
-    //   const updateResult = await classCollection.updateMany(
-    //     { _id: { $in: courseId.map(id => new ObjectId(id)) } },
-    //     { $inc: { studentsEnrolled: 1, availableSeats: -1 } }
-    //   );
-
-    //   res.send({ updateResult });
-    // });
     app.post("/payments", verifyJWT, async (req, res) => {
       const payment = req.body;
       const insertResult = await paymentCollection.insertOne(payment);
@@ -403,11 +374,25 @@ async function run() {
     });
 
     app.get("/payments", verifyJWT, async (req, res) => {
-        const payments = await paymentCollection.find({}).toArray();
+
+        const payments = await paymentCollection.find().toArray();
         res.send(payments);
       
     });
-    
+
+       /*
+===================================================
+            Admin Dashboard
+===================================================
+*/ 
+    app.get('/adminstats', async(req, res)=> {
+      const users = await userCollection.estimatedDocumentCount()
+      const classData = await classCollection.estimatedDocumentCount()
+      const orders = await paymentCollection.estimatedDocumentCount()
+      const payments = await paymentCollection.find().toArray()
+      const revenue = payments.reduce((sum, payment)=> sum + payment.price, 0)
+      res.send({users, classData, orders, revenue})
+    })
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
