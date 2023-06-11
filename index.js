@@ -8,7 +8,7 @@ const cors = require("cors");
 const app = express();
 const port = process.env.PORT || 5000;
 require("dotenv").config();
-const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY)
+const stripe = require("stripe")(process.env.PAYMENT_SECRET_KEY);
 const jwt = require("jsonwebtoken");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
@@ -192,31 +192,30 @@ async function run() {
             Class Api
 ===================================================
 */
-   
-app.get("/classes", async (req, res) => {
-  const { email } = req.query;
 
-  if (email) {
-    // getting instructor's classes
-    try {
-      const classes = await classCollection.find({ email }).toArray();
-      res.json(classes);
-    } catch (error) {
-      console.error("Failed to fetch instructor's classes:", error);
-      res.status(500).send("Failed to fetch instructor's classes");
-    }
-  } else {
-    // getting all classes
-    try {
-      const classes = await classCollection.find().toArray();
-      res.json(classes);
-    } catch (error) {
-      console.error("Failed to fetch classes:", error);
-      res.status(500).send("Failed to fetch classes");
-    }
-  }
-});
+    app.get("/classes", async (req, res) => {
+      const { email } = req.query;
 
+      if (email) {
+        // getting instructor's classes
+        try {
+          const classes = await classCollection.find({ email }).toArray();
+          res.json(classes);
+        } catch (error) {
+          console.error("Failed to fetch instructor's classes:", error);
+          res.status(500).send("Failed to fetch instructor's classes");
+        }
+      } else {
+        // getting all classes
+        try {
+          const classes = await classCollection.find().toArray();
+          res.json(classes);
+        } catch (error) {
+          console.error("Failed to fetch classes:", error);
+          res.status(500).send("Failed to fetch classes");
+        }
+      }
+    });
 
     // add class
     app.post("/classes", verifyJWT, async (req, res) => {
@@ -265,9 +264,6 @@ app.get("/classes", async (req, res) => {
       const result = await classCollection.updateOne(filter, updateDoc);
       res.send(result);
     });
-
-
-    
 
     /*
 ===================================================
@@ -323,31 +319,95 @@ app.get("/classes", async (req, res) => {
     });
 
     // create payment intent
-    app.post('/create-payment-intent', verifyJWT, async (req, res) => {
+    app.post("/create-payment-intent", verifyJWT, async (req, res) => {
       const { price } = req.body;
       const amount = parseInt(price * 100);
       // console.log(price, amount);
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
-        currency: 'usd',
-        payment_method_types: ['card']
+        currency: "usd",
+        payment_method_types: ["card"],
       });
 
       res.send({
-        clientSecret: paymentIntent.client_secret
-      })
-    })
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
 
-    app.post('/payments', verifyJWT, async (req, res) => {
+    // app.post('/payments', verifyJWT, async (req, res) => {
+    //   const payment = req.body;
+    //   const insertResult = await paymentCollection.insertOne(payment);
+    //   // res.send(result)
+
+    //   const query = { _id: { $in: payment.cartItems.map(id => new ObjectId(id)) } }
+    //   const deleteResult = await cartCollection.deleteMany(query)
+
+    //   res.send({ insertResult, deleteResult });
+    // })
+    // app.post('/payments', verifyJWT, async (req, res) => {
+    //   const payment = req.body;
+    //   const insertResult = await paymentCollection.insertOne(payment);
+
+    //   const courseIds = payment.courseId;
+
+    //   // Update the enrolled classes and reduce available seats
+    //   const updateResult = await classCollection.updateMany(
+    //     { _id: { $in: courseIds.map(id => new ObjectId(id)) } },
+    //     { $inc: { studentsEnrolled: 1, availableSeats: -1 } }
+    //   );
+
+    //   res.send({ insertResult, updateResult });
+    // });
+
+    // app.post('/classes/enroll', verifyJWT, async (req, res) => {
+    //   const { courseId } = req.body;
+
+    //   // Update the enrolled classes
+    //   const updateResult = await classCollection.updateMany(
+    //     { _id: { $in: courseId.map(id => new ObjectId(id)) } },
+    //     { $inc: { studentsEnrolled: 1, availableSeats: -1 } }
+    //   );
+
+    //   res.send({ updateResult });
+    // });
+    app.post("/payments", verifyJWT, async (req, res) => {
       const payment = req.body;
       const insertResult = await paymentCollection.insertOne(payment);
-      // res.send(result)
 
-      const query = { _id: { $in: payment.cartItems.map(id => new ObjectId(id)) } }
-      const deleteResult = await cartCollection.deleteMany(query)
+      const courseIds = payment.courseId;
 
-      res.send({ insertResult, deleteResult });
-    })
+      // Update the enrolled classes and reduce available seats
+      const updateResult = await classCollection.updateMany(
+        { _id: { $in: courseIds.map((id) => new ObjectId(id)) } },
+        { $inc: { studentsEnrolled: 1, availableSeats: -1 } }
+      );
+      // Delete
+      const query = {
+        _id: { $in: payment.cartItems.map((id) => new ObjectId(id)) },
+      };
+      const deleteResult = await cartCollection.deleteMany(query);
+
+      res.send({ insertResult, updateResult, deleteResult });
+    });
+
+    app.post("/classes/enroll", verifyJWT, async (req, res) => {
+      const { courseId } = req.body;
+
+      // Update the enrolled classes
+      const updateResult = await classCollection.updateMany(
+        { _id: { $in: courseId.map((id) => new ObjectId(id)) } },
+        { $inc: { studentsEnrolled: 1, availableSeats: -1 } }
+      );
+
+      res.send({ updateResult });
+    });
+
+    app.get("/payments", verifyJWT, async (req, res) => {
+        const payments = await paymentCollection.find({}).toArray();
+        res.send(payments);
+      
+    });
+    
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
