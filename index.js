@@ -48,12 +48,7 @@ const verifyJWT = (req, res, next) => {
       .send({ error: true, message: "unauthorized access" });
   }
   const token = authorization.split(" ")[1];
-  // console.log("token = ", token);
 
-  // // token verification
-  // jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-
-  //   req.decoded = decoded;
 
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
     if (err) {
@@ -70,11 +65,11 @@ const verifyJWT = (req, res, next) => {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
-    const instructorCollection = client
-      .db("photoSafari")
-      .collection("instructors");
+    // const instructorCollection = client
+    //   .db("photoSafari")
+    //   .collection("instructors");
     const classCollection = client.db("photoSafari").collection("classes");
     const cartCollection = client.db("photoSafari").collection("carts");
     const userCollection = client.db("photoSafari").collection("users");
@@ -395,10 +390,10 @@ async function run() {
     })
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    // await client.db("admin").command({ ping: 1 });
+    // console.log(
+    //   "Pinged your deployment. You successfully connected to MongoDB!"
+    // );
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
