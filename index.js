@@ -49,7 +49,6 @@ const verifyJWT = (req, res, next) => {
   }
   const token = authorization.split(" ")[1];
 
-
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
     if (err) {
       return res.status(403).send({ error: true, message: "forbidden access" });
@@ -151,7 +150,7 @@ async function run() {
     app.get("/users/instructor/:email", verifyJWT, async (req, res) => {
       const email = req.params.email;
       if (req.decoded.email !== email) {
-       return res.send({ instructor: false });
+        return res.send({ instructor: false });
       }
       const query = { email: email };
       const user = await userCollection.findOne(query);
@@ -312,6 +311,13 @@ async function run() {
             Delete Cart Item
 ===================================================
 */
+
+    app.get("/carts/:id", verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await cartCollection.findOne(query);
+      res.send(result);
+    });
     app.delete("/carts/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
@@ -335,7 +341,6 @@ async function run() {
       });
     });
 
-
     app.post("/payments", verifyJWT, async (req, res) => {
       const payment = req.body;
       const insertResult = await paymentCollection.insertOne(payment);
@@ -344,13 +349,17 @@ async function run() {
 
       // Update the enrolled classes and reduce available seats
       const updateResult = await classCollection.updateMany(
-        { _id: { $in: courseIds.map((id) => new ObjectId(id)) } },
+        // { _id: { $in: courseIds.map((id) => new ObjectId(id)) } },
+        { _id: new ObjectId(courseIds) },
         { $inc: { studentsEnrolled: 1, availableSeats: -1 } }
       );
       // Delete
       const query = {
-        _id: { $in: payment.cartItems.map((id) => new ObjectId(id)) },
+        // _id: { $in: payment.cartItems.map((id) => new ObjectId(id)) },
+         _id: new ObjectId(payment.cartItems) 
+         
       };
+      // console.log(payment.cartItemId);
       const deleteResult = await cartCollection.deleteMany(query);
 
       res.send({ insertResult, updateResult, deleteResult });
@@ -369,25 +378,23 @@ async function run() {
     });
 
     app.get("/payments", verifyJWT, async (req, res) => {
-
-        const payments = await paymentCollection.find().toArray();
-        res.send(payments);
-      
+      const payments = await paymentCollection.find().toArray();
+      res.send(payments);
     });
 
-       /*
+    /*
 ===================================================
             Admin Dashboard
 ===================================================
-*/ 
-    app.get('/adminstats', async(req, res)=> {
-      const users = await userCollection.estimatedDocumentCount()
-      const classData = await classCollection.estimatedDocumentCount()
-      const orders = await paymentCollection.estimatedDocumentCount()
-      const payments = await paymentCollection.find().toArray()
-      const revenue = payments.reduce((sum, payment)=> sum + payment.price, 0)
-      res.send({users, classData, orders, revenue})
-    })
+*/
+    app.get("/adminstats", async (req, res) => {
+      const users = await userCollection.estimatedDocumentCount();
+      const classData = await classCollection.estimatedDocumentCount();
+      const orders = await paymentCollection.estimatedDocumentCount();
+      const payments = await paymentCollection.find().toArray();
+      const revenue = payments.reduce((sum, payment) => sum + payment.price, 0);
+      res.send({ users, classData, orders, revenue });
+    });
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
